@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Instrument Dashboard</title>
+<script src="/chart.umd.min.js"></script>
+<style>
+  body { font-family: -apple-system, Helvetica, Arial, sans-serif; margin: 2rem; background: #f7f7f9; color: #222; }
+  h1 { margin-bottom: 0.25rem; }
+  #status { color: #888; font-size: 0.85rem; margin-bottom: 1.5rem; }
+  #status.error { color: #c0392b; }
+  .controls { margin-bottom: 1.5rem; }
+  .controls label { font-size: 0.9rem; margin-right: 0.5rem; }
+  .controls input { padding: 0.3rem 0.5rem; }
+  .chart-card { background: white; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  canvas { max-height: 320px; }
+</style>
+</head>
+<body>
+  <h1>Instrument Dashboard</h1>
+  <div id="status">connecting...</div>
+
+  <div class="controls">
+    <label for="instrument">Instrument ID</label>
+    <input id="instrument" type="text" value="inst-1">
+  </div>
+
+  <div class="chart-card">
+    <canvas id="rawChart"></canvas>
+  </div>
+  <div class="chart-card">
+    <canvas id="processedChart"></canvas>
+  </div>
+
+<script>
+const rawCtx = document.getElementById('rawChart').getContext('2d');
+const processedCtx = document.getElementById('processedChart').getContext('2d');
+
+const rawChart = new Chart(rawCtx, {
+  type: 'line',
+  data: { labels: [], datasets: [
+    { label: 'Raw value', data: [], borderColor: '#2980b9', backgroundColor: 'rgba(41,128,185,0.1)', pointRadius: 0, tension: 0.2 },
+  ]},
+  options: { animation: false, responsive: true,
+    plugins: { title: { display: true, text: 'Raw Instrument Signal' } },
+    scales: { x: { ticks: { maxTicksLimit: 10 } } }
+  }
+});
+
+const processedChart = new Chart(processedCtx, {
+  type: 'line',
+  data: { labels: [], datasets: [
+    { label: 'Rolling avg', data: [], borderColor: '#27ae60', pointRadius: 0, tension: 0.2 },
+    { label: 'Rolling min', data: [], borderColor: '#e67e22', pointRadius: 0, borderDash: [4,4], tension: 0.2 },
+    { label: 'Rolling max', data: [], borderColor: '#8e44ad', pointRadius: 0, borderDash: [4,4], tension: 0.2 },
+  ]},
+  options: { animation: false, responsive: true,
+    plugins: { title: { display: true, text: 'Rolling Statistics (DataProcessor output)' } },
+    scales: { x: { ticks: { maxTicksLimit: 10 } } }
+  }
+});
+
+function shortTime(ts) {
+  // ts like "2026-07-02T10:00:00.000" -> "10:00:00"
+  const m = ts.match(/T(\d\d:\d\d:\d\d)/);
+  return m ? m[1] : ts;
+}
+
+async function refresh() {
+  const instrument = document.getElementById('instrument').value.trim() || 'inst-1';
+  const statusEl = document.getElementById('status');
+  try {
+    const resp = await fetch(`/api/data?instrument_id=${encodeURIComponent(instrument)}&limit=200`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    rawChart.data.labels = data.raw.map(r => shortTime(r.timestamp));
+    rawChart.data.datasets[0].data = data.raw.map(r => r.value);
+    rawChart.update();
+
+    processedChart.data.labels = data.processed.map(r => shortTime(r.timestamp));
+    processedChart.data.datasets[0].data = data.processed.map(r => r.rolling_avg);
+    processedChart.data.datasets[1].data = data.processed.map(r => r.rolling_min);
+    processedChart.data.datasets[2].data = data.processed.map(r => r.rolling_max);
+    processedChart.update();
+
+    statusEl.textContent = `connected — ${data.raw.length} raw points, ${data.processed.length} processed points (last updated ${new Date().toLocaleTimeString()})`;
+    statusEl.classList.remove('error');
+  } catch (e) {
+    statusEl.textContent = `error fetching data: ${e.message}`;
+    statusEl.classList.add('error');
+  }
+}
+
+refresh();
+setInterval(refresh, 1000);
+</script>
+</body>
+</html>
