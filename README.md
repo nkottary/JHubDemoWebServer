@@ -3,6 +3,8 @@ JHubDemoWebServer
 
 Web server for JuliaHub project deployment demos
 
+![Diagram](diagram.jpg)
+
 - `bin/main.jl` is the entrypoint for execution on JuliaHub platform
 - A `Manifest.toml` needs to be generated before deploying this project. You can generate a `Manifest.toml` file by instantiating the Project.toml locally or on the JuliaHub IDE (recommended) by clicking "Launch" on the project page. The julia version used for instantiation should match the version on JuliaHub.
 - Recommended to use instance type with at least 8GB memory.
