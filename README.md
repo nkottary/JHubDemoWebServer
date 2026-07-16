@@ -10,3 +10,13 @@ Web server for JuliaHub project deployment demos
 - Recommended to use instance type with at least 8GB memory.
 - Serves on port 8080 so mention that in the project deployment settings so that the port is proxied correctly.
 - The DB service endpoint is hardcoded in src/WebServer.jl. Ideally this should be configured as an environment variable. Specifying environment variable is currently not possible for JuliaHub project deployments. **Make sure to edit this for your deployment see [DB Service](https://github.com/nkottary/JHubDemoDBService) for more details**.
+
+#### Health check
+
+Click on "Connect" to see the dashboard.
+
+#### Other services in this demo
+
+- The database service: [JHubDemoDBService](https://github.com/nkottary/JHubDemoDBService)
+- An instrument simulator: [JHubDemoInstrumentSimulator](https://github.com/nkottary/JHubDemoInstrumentSimulator)
+- The data processor: [JHubDemoDataProcessor](https://github.com/nkottary/JHubDemoDataProcessor)
